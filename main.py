@@ -18,7 +18,7 @@ class MyPlugin(Star):
         """可选择实现异步的插件初始化方法，当实例化该插件类之后会自动调用该方法。"""
 
     @filter.command("来张图")
-    async def helloworld(self, event: AstrMessageEvent):
+    async def getPixiv(self, event: AstrMessageEvent):
         """返回一张图片"""
 
         # 请求返回数据
@@ -31,6 +31,13 @@ class MyPlugin(Star):
                 ) as resp:
                     resp.raise_for_status()
                     image_url = (await resp.text()).strip()
+
+                async with session.get(
+                    image_url,
+                    timeout=aiohttp.ClientTimeout(total=30),
+                ) as img_resp:
+                    img_resp.raise_for_status()
+                    image_bytes = await img_resp.read()
         except Exception as e:
             logger.error(f"获取图片失败: {e}")
             yield event.plain_result("获取图片失败，稍后再试吧")
@@ -39,7 +46,7 @@ class MyPlugin(Star):
         # 返回消息
         yield event.chain_result([
             Comp.At(qq = event.get_sender_id()), 
-            Comp.Image.fromURL(url = image_url) 
+            Comp.Image.fromBytes(image_bytes)
         ]) 
 
 
